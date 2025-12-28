@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJK STUDIES - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3c72;
+            --accent: #f39c12;
+            --bg: #f8f9fa;
+        }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        header { 
+            background: var(--primary); 
+            color: white; 
+            padding: 20px; 
+            border-radius: 0 0 30px 30px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+        }
+        
+        .header-container { display: flex; align-items: center; justify-content: space-between; }
+        .user-profile-box { display: flex; align-items: center; gap: 15px; }
+
+        .dash-logo {
+            width: 55px; height: 55px; border-radius: 12px;
+            background: white; padding: 2px; object-fit: cover;
+            border: 2px solid var(--accent);
+        }
+
+        .user-info h1 { margin: 0; font-size: 18px; }
+        .user-info p { margin: 0; font-size: 12px; opacity: 0.8; }
+        
+        .main-nav { display: flex; justify-content: space-around; background: white; margin: -20px 20px 20px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .nav-tab { text-align: center; cursor: pointer; transition: 0.3s; color: #555; font-weight: bold; font-size: 12px; }
+        .nav-tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .section { display: none; padding: 20px; }
+        .section.active { display: block; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
+        .course-card { background: white; border-radius: 15px; padding: 15px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); border: 1px solid #eee; transition: 0.3s; position: relative; cursor: pointer; }
+        .course-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .course-icon { font-size: 35px; margin-bottom: 10px; display: block; }
+        .course-name { font-size: 14px; font-weight: bold; color: #333; }
+        
+        .badge { position: absolute; top: 8px; right: 8px; font-size: 10px; padding: 3px 7px; border-radius: 10px; color: white; font-weight: bold; }
+        .free-badge { background: #27ae60; }
+        .paid-badge { background: #e67e22; }
+
+        .btn-logout { background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="user-profile-box">
+                <img src="logo.png" alt="NJK Logo" class="dash-logo">
+                <div class="user-info">
+                    <h1 id="welcomeText">Hello, Achiever! 👋</h1>
+                    <p>NJK STUDIES - Learning Portal</p>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="main-nav">
+        <div class="nav-tab active" onclick="switchSection('all', this)">🌐<br>All Courses</div>
+        <div class="nav-tab" onclick="switchSection('my', this)">📂<br>My Courses</div>
+        <div class="nav-tab" onclick="switchSection('free', this)">🎁<br>Free Courses</div>
+    </div>
+
+    <div id="allSection" class="section active">
+        <h2>Explore Categories</h2>
+        <div class="grid" id="allGrid"></div>
+    </div>
+
+    <div id="mySection" class="section">
+        <h2>My Subscriptions</h2>
+        <div class="grid" id="myGrid"></div>
+    </div>
+
+    <div id="freeSection" class="section">
+        <h2>Free Lectures</h2>
+        <div class="grid" id="freeGrid"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-IjZGlnqKESLmnIfbt4h0aCFd4FszyoI",
+            databaseURL: "https://njkstudies06-default-rtdb.firebaseio.com",
+            projectId: "njkstudies06",
+            appId: "1:407840295344:web:2832efbabad1536ff52e75"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 15 Standard Courses for NJK STUDIES
+        const courseData = [
+            { name: "UPSC", icon: "🏛️" }, { name: "State PSC", icon: "🏢" },
+            { name: "NEET", icon: "🩺" }, { name: "JEE", icon: "⚙️" },
+            { name: "CUET", icon: "🎓" }, { name: "Board", icon: "📝" },
+            { name: "Teachers", icon: "🧑🏻‍🏫" }, { name: "UGC NET", icon: "🧑🏻‍🎓" },
+            { name: "Banking", icon: "🏦" }, { name: "Railway", icon: "🚂" },
+            { name: "SSC", icon: "📑" }, { name: "Police", icon: "👮" },
+            { name: "Foundation", icon: "📚" }, { name: "Indian Map", icon: "🇮🇳" },
+            { name: "World Map", icon: "🗺️" }
+        ];
+
+        // Fetch User Info (Mobile Number is key)
+        const userMobile = localStorage.getItem("userMobile") || "guest";
+
+        window.onload = function() {
+            renderLiveCourses();
+        };
+
+        function renderLiveCourses() {
+            const allGrid = document.getElementById("allGrid");
+            const myGrid = document.getElementById("myGrid");
+            const freeGrid = document.getElementById("freeGrid");
+
+            // 1. Get Live Pricing from Admin Data
+            db.ref('courses/').on('value', (courseSnap) => {
+                const liveFees = courseSnap.val() || {};
+
+                // 2. Get User's Purchased Access
+                db.ref('users/' + userMobile + '/purchasedCourses').on('value', (userSnap) => {
+                    const myAccess = userSnap.val() || {};
+
+                    allGrid.innerHTML = ""; myGrid.innerHTML = ""; freeGrid.innerHTML = "";
+
+                    courseData.forEach(course => {
+                        const info = liveFees[course.name] || { discountFee: "0", status: "LOCKED" };
+                        const hasAccess = myAccess[course.name] === "ACTIVE";
+                        
+                        let badge = info.status === "FREE" 
+                            ? '<span class="badge free-badge">Free</span>' 
+                            : `<span class="badge paid-badge">₹${info.discountFee}</span>`;
+                        
+                        let cardHTML = `
+                            <div class="course-card" onclick="openCourse('${course.name}')">
+                                ${badge}
+                                <span class="course-icon">${course.icon}</span>
+                                <span class="course-name">${course.name}</span>
+                            </div>`;
+                        
+                        allGrid.innerHTML += cardHTML;
+                        if(hasAccess) myGrid.innerHTML += cardHTML;
+                        if(info.status === "FREE") freeGrid.innerHTML += cardHTML;
+                    });
+                });
+            });
+        }
+
+        function openCourse(courseName) {
+            localStorage.setItem("selected_course", courseName);
+            window.location.href = "course_details.html";
+        }
+
+        function switchSection(type, element) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(type + 'Section').classList.add('active');
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

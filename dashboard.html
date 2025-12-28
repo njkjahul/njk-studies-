@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJK STUDIES - Dashboard</title>
+    <style>
+        :root {
+            --primary: #1e3c72;
+            --accent: #f39c12;
+            --bg: #f8f9fa;
+        }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        /* Header Fix for Logo */
+        header { 
+            background: var(--primary); 
+            color: white; 
+            padding: 20px; 
+            border-radius: 0 0 30px 30px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+        }
+        
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .user-profile-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Dashboard Logo Style */
+        .dash-logo {
+            width: 55px;
+            height: 55px;
+            border-radius: 12px;
+            background: white;
+            padding: 2px;
+            object-fit: cover;
+            border: 2px solid var(--accent);
+        }
+
+        .user-info h1 { margin: 0; font-size: 18px; }
+        .user-info p { margin: 0; font-size: 12px; opacity: 0.8; }
+        
+        /* Navigation Tabs */
+        .main-nav { display: flex; justify-content: space-around; background: white; margin: -20px 20px 20px; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .nav-tab { text-align: center; cursor: pointer; transition: 0.3s; color: #555; font-weight: bold; font-size: 12px; }
+        .nav-tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        /* Section Handling */
+        .section { display: none; padding: 20px; }
+        .section.active { display: block; }
+
+        /* Course Cards Grid */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .course-card { background: white; border-radius: 15px; padding: 15px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); border: 1px solid #eee; transition: 0.3s; position: relative; cursor: pointer; }
+        .course-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .course-icon { font-size: 35px; margin-bottom: 10px; display: block; }
+        .course-name { font-size: 15px; font-weight: bold; color: #333; }
+        
+        .badge { position: absolute; top: 8px; right: 8px; font-size: 10px; padding: 3px 7px; border-radius: 10px; color: white; font-weight: bold; }
+        .free-badge { background: #27ae60; }
+        .paid-badge { background: #e67e22; }
+
+        .btn-logout { background: rgba(255,255,255,0.2); color: white; border: 1px solid white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="user-profile-box">
+                <img src="logo.png" alt="NJK Logo" class="dash-logo">
+                <div class="user-info">
+                    <h1 id="welcomeText">Hello, Achiever! 👋</h1>
+                    <p>Welcome to NJK STUDIES</p>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="location.href='index.html'">Logout</button>
+        </div>
+    </header>
+
+    <div class="main-nav">
+        <div class="nav-tab active" onclick="switchSection('all', this)">🌐<br>All Courses</div>
+        <div class="nav-tab" onclick="switchSection('my', this)">📂<br>My Courses</div>
+        <div class="nav-tab" onclick="switchSection('free', this)">🎁<br>Free Courses</div>
+    </div>
+
+    <div id="allSection" class="section active">
+        <h2>Explore All Categories</h2>
+        <div class="grid" id="allGrid"></div>
+    </div>
+
+    <div id="mySection" class="section">
+        <h2>My Purchased Courses</h2>
+        <div class="grid" id="myGrid"></div>
+    </div>
+
+    <div id="freeSection" class="section">
+        <h2>100% Free Lectures</h2>
+        <div class="grid" id="freeGrid"></div>
+    </div>
+
+    <script>
+        // --- आपकी पूरी कोर्स लिस्ट (सभी 14 कोर्सेज) ---
+        const courses = [
+            { id: 1, name: "UPSC", icon: "🏛️", isFree: false, isPurchased: false },
+            { id: 2, name: "State PSC", icon: "🏢", isFree: false, isPurchased: true },
+            { id: 3, name: "NEET", icon: "🩺", isFree: false, isPurchased: false },
+            { id: 4, name: "JEE", icon: "⚙️", isFree: false, isPurchased: false },
+            { id: 5, name: "CUET", icon: "🎓", isFree: false, isPurchased: false },
+            { id: 6, name: "Board", icon: "📝", isFree: true, isPurchased: false },
+            { id: 7, name: "Teachers", icon: "🧑🏻‍🏫", isFree: false, isPurchased: false},
+            { id: 8, name: "UGC NET", icon: "🧑🏻‍🎓", isFree: false, isPurchased: false },
+            { id: 9, name: "Banking", icon: "🏦", isFree: false, isPurchased: false },
+            { id: 10, name: "Railway", icon: "🚂", isFree: true, isPurchased: false },
+            { id: 11, name: "SSC", icon: "📑", isFree: false, isPurchased: true },
+            { id: 12, name: "Police", icon: "👮", isFree: false, isPurchased: false },
+            { id: 13, name: "Foundation", icon: "📚", isFree: true, isPurchased: false },
+            { id: 14, name: "Indian Map", icon: "🇮🇳", isFree: true, isPurchased: false },
+            { id: 15, name: "World Map", icon: "🗺️", isFree: false, isPurchased: false }
+        ];
+
+        window.onload = function() {
+            renderCourses();
+        };
+
+        function openCourse(courseName) {
+            localStorage.setItem("selected_course", courseName);
+            window.location.href = "course_details.html";
+        }
+
+        function renderCourses() {
+            const allGrid = document.getElementById("allGrid");
+            const myGrid = document.getElementById("myGrid");
+            const freeGrid = document.getElementById("freeGrid");
+
+            // ग्रिड्स को साफ़ करें
+            allGrid.innerHTML = "";
+            myGrid.innerHTML = "";
+            freeGrid.innerHTML = "";
+
+            courses.forEach(course => {
+                let badge = course.isFree ? '<span class="badge free-badge">Free</span>' : '<span class="badge paid-badge">Paid</span>';
+                
+                let cardHTML = `
+                    <div class="course-card" onclick="openCourse('${course.name}')">
+                        ${badge}
+                        <span class="course-icon">${course.icon}</span>
+                        <span class="course-name">${course.name}</span>
+                    </div>`;
+                
+                allGrid.innerHTML += cardHTML;
+                if(course.isPurchased) myGrid.innerHTML += cardHTML;
+                if(course.isFree) freeGrid.innerHTML += cardHTML;
+            });
+        }
+
+        function switchSection(type, element) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            element.classList.add('active');
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            if(type === 'all') document.getElementById('allSection').classList.add('active');
+            if(type === 'my') document.getElementById('mySection').classList.add('active');
+            if(type === 'free') document.getElementById('freeSection').classList.add('active');
+        }
+    </script>
+</body>
+</html>

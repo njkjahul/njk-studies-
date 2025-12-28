@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJK STUDIES | Watch & Learn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #1e3c72; --red: #ff0000; --green: #27ae60; --blue: #3498db; --bg: #f3f4f6; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; padding: 0; user-select: none; }
+        
+        /* Fixed Top Header */
+        .app-header { background: var(--primary); color: white; padding: 15px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1001; }
+        .app-header i { font-size: 20px; cursor: pointer; margin-right: 15px; }
+        .app-header h1 { font-size: 16px; margin: 0; font-weight: 800; }
+
+        /* Video Player Area */
+        .player-wrapper { width: 100%; background: #000; aspect-ratio: 16/9; position: sticky; top: 54px; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #videoFrame { width: 100%; height: 100%; border: none; }
+
+        .container { padding: 15px; }
+
+        /* Lecture Card Design */
+        .lecture-block { 
+            background: white; border-radius: 20px; padding: 18px; margin-bottom: 20px; 
+            border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+        }
+        .lec-info { margin-bottom: 15px; }
+        .lec-info h4 { margin: 0; font-size: 15px; color: #111827; line-height: 1.4; }
+        .lec-info span { font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; margin-top: 5px; display: inline-block; }
+
+        /* Video Action Button */
+        .video-action-btn { 
+            width: 100%; background: var(--red); color: white; border: none; padding: 12px; 
+            border-radius: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;
+            cursor: pointer; transition: 0.2s; font-size: 14px; margin-bottom: 15px;
+        }
+        .video-action-btn:active { transform: scale(0.97); }
+
+        /* PDF Section Styling */
+        .pdf-box { background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 12px; padding: 12px; }
+        .pdf-box-title { font-size: 12px; font-weight: 800; color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        
+        .pdf-btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .p-btn { 
+            border: none; border-radius: 8px; padding: 10px 5px; font-size: 10px; font-weight: 800;
+            display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; text-decoration: none;
+        }
+        .v-btn { background: #eff6ff; color: var(--blue); }
+        .s-btn { background: #f0fdf4; color: var(--green); }
+        .d-btn { background: #fef2f2; color: var(--red); }
+
+        .no-content { text-align: center; padding: 100px 20px; color: #9ca3af; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <i class="fa fa-arrow-left" onclick="history.back()"></i>
+        <h1 id="topCourseName">NJK STUDIES</h1>
+    </header>
+
+    <div class="player-wrapper" id="playerArea">
+        <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; text-align:center;">
+            <i class="fa-brands fa-youtube" style="font-size:50px; color:var(--red);"></i>
+            <p style="font-size:12px; margin-top:10px; font-weight:600;">Choose a class to start learning</p>
+        </div>
+    </div>
+
+    <div class="container" id="contentMaster">
+        <p class="no-content">Connecting to Server...</p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-IjZGlnqKESLmnIfbt4h0aCFd4FszyoI",
+            databaseURL: "https://njkstudies06-default-rtdb.firebaseio.com",
+            projectId: "njkstudies06",
+            appId: "1:407840295344:web:2832efbabad1536ff52e75"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const activeCourse = localStorage.getItem("selected_course");
+        document.getElementById('topCourseName').innerText = activeCourse;
+
+        window.onload = function() {
+            if(!activeCourse) return;
+
+            db.ref('content/' + activeCourse).on('value', (snapshot) => {
+                const mainDiv = document.getElementById('contentMaster');
+                mainDiv.innerHTML = "";
+                const data = snapshot.val();
+
+                if(!data) {
+                    mainDiv.innerHTML = "<div class='no-content'>No content uploaded yet for this course.</div>";
+                    return;
+                }
+
+                for(let subject in data) {
+                    for(let id in data[subject]) {
+                        const item = data[subject][id];
+                        const pdfExists = (item.pdfUrl && item.pdfUrl !== 'none');
+
+                        mainDiv.innerHTML += `
+                            <div class="lecture-block">
+                                <div class="lec-info">
+                                    <span>${subject}</span>
+                                    <h4>${item.title}</h4>
+                                </div>
+
+                                <button class="video-action-btn" onclick="startVideo('${item.videoID}')">
+                                    <i class="fa fa-play-circle"></i> WATCH VIDEO CLASS
+                                </button>
+
+                                ${pdfExists ? `
+                                <div class="pdf-box">
+                                    <div class="pdf-box-title"><i class="fa fa-file-pdf"></i> STUDY NOTES (PDF)</div>
+                                    <div class="pdf-btn-group">
+                                        <div class="p-btn v-btn" onclick="openPdf('${item.pdfUrl}')">
+                                            <i class="fa fa-eye"></i> VIEW
+                                        </div>
+                                        <div class="p-btn s-btn" onclick="shareNotes('${item.pdfUrl}', '${item.title}')">
+                                            <i class="fa fa-share-alt"></i> SHARE
+                                        </div>
+                                        <a href="${item.pdfUrl}" target="_blank" class="p-btn d-btn">
+                                            <i class="fa fa-download"></i> DOWNLOAD
+                                        </a>
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }
+                }
+            });
+        };
+
+        // Ad-Free Video Play (Ad-less experience)
+        function startVideo(id) {
+            const screen = document.getElementById('playerArea');
+            screen.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&showinfo=0" allowfullscreen allow="autoplay"></iframe>`;
+            window.scrollTo(0,0);
+        }
+
+        // View PDF In-App (Same Player Window)
+        function openPdf(url) {
+            const screen = document.getElementById('playerArea');
+            let drivePreview = url.replace("/view", "/preview");
+            screen.innerHTML = `<iframe src="${drivePreview}"></iframe>`;
+            window.scrollTo(0
+      

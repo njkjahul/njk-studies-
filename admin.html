@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJK STUDIES | Admin Control Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #1e3c72; --accent: #f39c12; --sidebar: #0f172a; --bg: #f1f5f9; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); margin: 0; display: flex; }
+        
+        /* Sidebar Navigation */
+        .sidebar { width: 280px; background: var(--sidebar); height: 100vh; position: fixed; color: white; padding: 25px; box-sizing: border-box; }
+        .sidebar h2 { color: var(--accent); font-weight: 800; margin-bottom: 30px; text-align: center; border-bottom: 1px solid #1e293b; padding-bottom: 20px; letter-spacing: 1px; }
+        .nav-item { padding: 14px; cursor: pointer; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; color: #94a3b8; transition: 0.3s; font-weight: 600; }
+        .nav-item:hover, .nav-item.active { background: var(--primary); color: white; }
+
+        /* Main Content Area */
+        .main { margin-left: 280px; width: 100%; padding: 40px; box-sizing: border-box; }
+        .panel { display: none; animation: fadeIn 0.3s ease; }
+        .panel.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+        /* Card & UI Elements */
+        .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); margin-bottom: 25px; border: 1px solid #e2e8f0; }
+        h3 { margin-top: 0; color: #1e293b; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 2px solid #f1f5f9; outline: none; font-size: 14px; box-sizing: border-box; transition: 0.2s; }
+        input:focus { border-color: var(--primary); }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; transition: 0.3s; }
+        .btn-main:hover { background: #162d56; transform: translateY(-2px); }
+
+        /* Table Design */
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 15px; overflow: hidden; }
+        th { background: #f8fafc; padding: 15px; text-align: left; color: #64748b; font-size: 12px; text-transform: uppercase; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
+        .badge { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .badge-free { background: #dcfce7; color: #059669; }
+        .badge-paid { background: #fee2e2; color: #ef4444; }
+        .btn-sm { padding: 8px 14px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.2s; }
+        .btn-edit { background: #f1f5f9; color: var(--primary); }
+        .btn-unlock { background: var(--primary); color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>NJK STUDIES</h2>
+        <div class="nav-item active" onclick="showPanel('fees', this)"><i class="fa fa-dollar-sign"></i> Edit Fees</div>
+        <div class="nav-item" onclick="showPanel('content', this)"><i class="fa fa-cloud-upload"></i> Upload Content</div>
+        <div class="nav-item" onclick="showPanel('students', this)"><i class="fa fa-users"></i> Students Data</div>
+        <div class="nav-item" onclick="showPanel('news', this)"><i class="fa fa-bullhorn"></i> Announcements</div>
+    </div>
+
+    <div class="main">
+        
+        <div id="fees" class="panel active">
+            <h3><i class="fa fa-edit" style="color:var(--accent)"></i> Course Fee Management</h3>
+            <div id="editBox" class="card" style="display:none; border: 2px solid var(--accent);">
+                <h4 id="editCourseTitle" style="margin-top:0">Course Name</h4>
+                <div class="grid-2">
+                    <div>
+                        <label style="font-size:12px; font-weight:700">New Price (₹)</label>
+                        <input type="number" id="inp_price" placeholder="e.g. 499">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:700">Access Type</label>
+                        <select id="inp_status">
+                            <option value="LOCKED">LOCKED (Paid)</option>
+                            <option value="FREE">FREE (Open)</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-main" onclick="saveFees()">Update Course</button>
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Subject Name</th><th>Price</th><th>Status</th><th>Action</th></tr>
+                </thead>
+                <tbody id="feesTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="content" class="panel">
+            <h3><i class="fa fa-video" style="color:var(--primary)"></i> Upload Lectures & PDF Notes</h3>
+            <div class="card">
+                <label style="font-weight:700">Select Target Category</label>
+                <select id="sel_course"></select>
+                
+                <div class="grid-2">
+                    <input type="text" id="up_subject" placeholder="Chapter Name (e.g. Ancient History)">
+                    <input type="text" id="up_title" placeholder="Lecture Title (e.g. Class 01)">
+                </div>
+                <div class="grid-2">
+                    <input type="text" id="up_vid" placeholder="YouTube Video ID (e.g. z9b5zX6WwGc)">
+                    <input type="text" id="up_pdf" placeholder="PDF Drive Link (Optional)">
+                </div>
+                <button class="btn-main" onclick="uploadContent()">Publish to App</button>
+            </div>
+        </div>
+
+        <div id="students" class="panel">
+            <h3><i class="fa fa-database" style="color:#6366f1"></i> Registered Students</h3>
+            <table>
+                <thead>
+                    <tr><th>Name</th><th>Mobile No.</th><th>Unlocked Courses</th><th>Control</th></tr>
+                </thead>
+                <tbody id="studentTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="news" class="panel">
+            <h3><i class="fa fa-bell" style="color:#ef4444"></i> Broadcast New Notice</h3>
+            <div class="card">
+                <textarea id="notice_text" rows="5" placeholder="Write the news/update for your students here..."></textarea>
+                <button class="btn-main" onclick="sendNotice()">Broadcast to All Students</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-IjZGlnqKESLmnIfbt4h0aCFd4FszyoI",
+            databaseURL: "https://njkstudies06-default-rtdb.firebaseio.com",
+            projectId: "njkstudies06",
+            appId: "1:407840295344:web:2832efbabad1536ff52e75"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Exact Subject List from your Dashboard
+        const dashCourses = [
+            "UPSC", "State PSC", "NEET", "JEE", "CUET", "Board", 
+            "Teachers", "UGC NET", "Banking", "Railway", "SSC", 
+            "Police", "Foundation", "Indian Map", "World Map"
+        ];
+
+        function showPanel(id, el) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // --- Load Courses and Sync with Dashboard ---
+        db.ref('courses/').on('value', snap => {
+            const tbody = document.getElementById('feesTableBody');
+            const select = document.getElementById('sel_course');
+            tbody.innerHTML = ""; select.innerHTML = "";
+            const data = snap.val() || {};
+
+            dashCourses.forEach(name => {
+                const c = data[name] || { discountFee: '0', status: 'LOCKED' };
+                tbody.innerHTML += `<tr>
+                    <td><b>${name}</b></td>
+                    <td>₹${c.discountFee}</td>
+                    <td><span class="badge ${c.status==='FREE'?'badge-free':'badge-paid'}">${c.status}</span></td>
+                    <td><button class="btn-sm btn-edit" onclick="openEdit('${name}','${c.discountFee}')">Manage</button></td>
+                </tr>`;
+                select.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+        });
+
+        let currentCourse = "";
+        function openEdit(name, price) {
+            currentCourse = name;
+            document.getElementById('editBox').style.display = "block";
+            document.getElementById('editCourseTitle').innerText = "Settings for: " + name;
+            document.getElementById('inp_price').value = price;
+            window.scrollTo(0,0);
+        }
+
+        function saveFees() {
+            db.ref('courses/' + currentCourse).update({
+                discountFee: document.getElementById('inp_price').value,
+                status: document.getElementById('inp_status').value
+            }).then(() => { 
+                alert(currentCourse + " updated successfully!"); 
+                document.getElementById('editBox').style.display = "none"; 
+            });
+        }
+
+        function uploadContent() {
+            const course = document.getElementById('sel_course').value;
+            const sub = document.getElementById('up_subject').value;
+            if(!sub) return alert("Please enter a Chapter Name!");
+
+            db.ref('content/' + course + '/' + sub).push({
+                title: document.getElementById('up_title').value,
+                videoID: document.getElementById('up_vid').value,
+                pdfUrl: document.getElementById('up_pdf').value || "none"
+            }).then(() => alert("Content published successfully!"));
+        }
+
+        // --- Student Data Fetching ---
+        db.ref('users/').on('value', snap => {
+            const tbody = document.getElementById('studentTableBody');
+            tbody.innerHTML = "";
+            snap.forEach(child => {
+                const u = child.val();
+                let access = Object.keys(u.purchasedCourses || {}).filter(k => k !== 'init').join(', ');
+                tbody.innerHTML += `<tr>
+                    <td>${u.fullName}</td>
+                    <td>${u.mobile}</td>
+                    <td style="color:var(--primary); font-weight:600; font-size:12px;">${access || 'None'}</td>
+                    <td><button class="btn-sm btn-unlock" onclick="unlock('${u.mobile}')">Unlock Access</button></td>
+                </tr>`;
+            });
+        });
+
+        function unlock(mobile) {
+            const c = prompt("Enter Subject Name to Unlock (e.g., SSC, UPSC):");
+            if(c) db.ref('users/'+mobile+'/purchasedCourses/'+c).set("ACTIVE");
+        }
+
+        function sendNotice() {
+            db.ref('announcement').set({ 
+                text: document.getElementById('notice_text').value,
+                timestamp: Date.now()
+            }).then(() => alert("Notice sent to all students!"));
+        }
+    </script>
+</body>
+</html>
